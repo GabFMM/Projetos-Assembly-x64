@@ -11,5 +11,5 @@ Tempos em tempos atualizarei os arquivos.
 No terminal do linux, digite a seguinte sequência: <br><br>
 nasm -felf64 nome_do_arquivo.asm <br>
 ld nome_do_arquivo.o -o nome_do_arquivo <br>
-./<nome_do_arquivo>
+./nome_do_arquivo
 </p>
