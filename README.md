@@ -8,8 +8,8 @@ Tempos em tempos atualizarei os arquivos.
 <h2>Como compilar</h2>
 
 <p>
-No terminal do linux, digite a seguinte sequência: <br>
-nasm -felf64 <nome_do_arquivo>.asm <br>
-ld <nome_do_arquivo>.o -o <nome_do_arquivo> <br>
+No terminal do linux, digite a seguinte sequência: <br><br>
+nasm -felf64 nome_do_arquivo.asm <br>
+ld nome_do_arquivo.o -o nome_do_arquivo <br>
 ./<nome_do_arquivo>
 </p>
