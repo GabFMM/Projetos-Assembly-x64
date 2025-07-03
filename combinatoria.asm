@@ -88,7 +88,6 @@ _start:
 	cmp byte [opcao], 'c'
 	je combinacao
 
-
 	jmp erro
 
 permutacao:
