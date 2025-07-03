@@ -2,8 +2,11 @@ section .data
 	
 	; referente ao menu
 
-	msgInicial db "Insira:", 0xA, "P para permutacao;", 0xA, "A para arranjo;", 0xA, "C para combinacao;", 0xA
+	msgInicial db 0xA, "Insira:", 0xA, "P para permutacao;", 0xA, "A para arranjo;", 0xA, "C para combinacao;", 0xA, "X para sair do programa.", 0xA
 	lenMsgInicial equ $ - msgInicial
+
+	msgVoltarMenu db 0xA, "Deseja voltar para o menu de opcoes?", 0xA, "Insira S para sim ou N para nao.", 0xA
+	lenMsgVoltarMenu equ $ - msgVoltarMenu
 	
 	; referente a permutacao
 
@@ -31,6 +34,9 @@ section .data
 	msgErro db "Entrada(s) invalida(s)", 0xA
 	lenMsgErro equ $ - msgErro
 
+	limpaTela db 0x1b, '[2J', 0x1b, '[H', 0
+	lenLimpaTela equ $ - limpaTela 
+
 	saidaResult db "000000", 0xA ; 6 digitos. Tamanho 7 (caso resultado com valor pequeno) ou 6 (resultado gigante)
 
 	; casos com resultados gigantes
@@ -39,6 +45,7 @@ section .data
 
 section .bss
 	opcao resb 2 ; referente as opcoes do menu. Opcao + '\n'
+	opcaoVoltar resb 2 ; referente as opcoes de voltar para o menu. Opcao + '\n'
 	
 	; util para as labels permutacao, arranjo
 	entradaNum1 resb 4 ; 3 digitos + '\n'
@@ -56,39 +63,106 @@ section .text
 	global _start
 
 _start:
-	; Mostro o menu
+
+	inicioMenu:
+		
+		; util para multi usos do menu
+		jmp resetar
+		fimResetar:
+
+		; Mostro o menu
+		mov rax, 1
+		mov rdi, 1
+		mov rsi, msgInicial
+		mov rdx, lenMsgInicial
+		syscall
+
+		; Le a opcao escolhida
+		mov rax, 0
+		mov rdi, 0
+		mov rsi, opcao
+		mov rdx, 2
+		syscall
+
+		; Para letras maiusculas
+		cmp byte [opcao], 'P'
+		je permutacao
+
+		cmp byte [opcao], 'A'
+		je arranjo
+
+		cmp byte [opcao], 'C'
+		je combinacao
+		
+		cmp byte [opcao], 'X'
+		je fimMenu
+
+		; Para letras minusculas
+		cmp byte [opcao], 'p'
+		je permutacao
+
+		cmp byte [opcao], 'a'
+		je arranjo
+
+		cmp byte [opcao], 'c'
+		je combinacao
+
+		cmp byte [opcao], 'x'
+		je fimMenu
+
+		jmp erro
+
+	fimMenu:
+
+	; encerro programa
+	mov rax, 60
+	xor rdi, rdi
+	syscall
+
+; limpa a tela e limpa as variaveis e buffers
+resetar:
+	; limpa a tela
 	mov rax, 1
 	mov rdi, 1
-	mov rsi, msgInicial
-	mov rdx, lenMsgInicial
+	mov rsi, limpaTela
+	mov rdx, lenLimpaTela
 	syscall
 
-	; Le a opcao escolhida
-	mov rax, 0
-	mov rdi, 0
-	mov rsi, opcao
-	mov rdx, 2
-	syscall
+	; limpa as variaveis e os buffers
+	
+	xor r8, r8
+	inicioLoopResetar1:
+		cmp r8, 6
+		je fimLoopResetar1
 
-	cmp byte [opcao], 'P'
-	je permutacao
+		mov byte [saidaResult + r8], '0'
+		inc r8
 
-	cmp byte [opcao], 'A'
-	je arranjo
+		jmp inicioLoopResetar1
+	fimLoopResetar1:
 
-	cmp byte [opcao], 'C'
-	je combinacao
+	xor r8, r8
+	inicioLoopResetar2:
+		cmp r8, 4
+		je fimLoopResetar2
 
-	cmp byte [opcao], 'p'
-	je permutacao
+		mov byte [saidaResultExpoente + r8], '0'
+		inc r8
 
-	cmp byte [opcao], 'a'
-	je arranjo
+		jmp inicioLoopResetar2
+	fimLoopResetar2:
+	
+	mov dword [entradaNum1], 0
+	mov dword [entradaNum2], 0
+	mov word [num1], 0
+	mov word [num2], 0
+	mov dword [numResult], 0
+	mov word [expoente1], 0
+	mov word [expoente2], 0
+	mov word [expoenteResult], 0
 
-	cmp byte [opcao], 'c'
-	je combinacao
-
-	jmp erro
+	; volta para o menu
+	jmp fimResetar	
 
 permutacao:
 	; requisito o numero de entrada
@@ -128,7 +202,7 @@ permutacao:
 	mov bx, word [expoente1]
 	mov word [expoenteResult], bx
 
-	jmp fim
+	jmp mostrarResultado
 
 arranjo:
 	; requisito o numero de entrada n
@@ -207,7 +281,7 @@ arranjo:
 	mov bx, word [expoente1]
 	mov word [expoenteResult], bx
 
-	jmp fim
+	jmp mostrarResultado
 
 combinacao:
 	
@@ -316,7 +390,7 @@ combinacao:
 		mov dword [numResult], eax ; sem risco de overflow
 		mov word [expoenteResult], bx
 	
-		jmp fim
+		jmp mostrarResultado
 	
 	semVirgulaComb:
 	
@@ -331,7 +405,7 @@ combinacao:
 		; como a saida do fatorial nao esta em notacao cientifica, o expoente deve ser 0
 		mov word [expoenteResult], 0
 
-		jmp fim		
+		jmp mostrarResultado	
 
 erro:
 	; informo para o usuario que a entrada foi invalida
@@ -341,12 +415,9 @@ erro:
 	mov rdx, lenMsgErro
 	syscall
 
-	; encerro o programa
-	mov rax, 60
-	xor rdi, rdi
-	syscall
+	jmp voltarMenu
 
-fim:
+mostrarResultado:
 	; converto de numero para caracter
 	mov r8, 0
 	inicioLoop:
@@ -449,10 +520,7 @@ fim:
 		mov rdx, 5
 		syscall
 
-		; encerro o programa
-		mov rax, 60
-		xor rdi, rdi
-		syscall
+		jmp voltarMenu	
 
 	naoCient: 
 
@@ -463,10 +531,37 @@ fim:
 	mov rdx, 7
 	syscall	
 
-	; encerro o programa
-	mov rax, 60
-	xor rdi, rdi
+	jmp voltarMenu
+
+voltarMenu:
+	; mostra a mensagem
+	mov rax, 1
+	mov rdi, 1
+	mov rsi, msgVoltarMenu
+	mov rdx, lenMsgVoltarMenu
+	syscall	
+
+	; leio a entrada
+	mov rax, 0
+	mov rdi, 0
+	mov rsi, opcaoVoltar
+	mov rdx, 2
 	syscall
+
+	cmp byte [opcaoVoltar], 'S'
+	je inicioMenu
+
+	cmp byte [opcaoVoltar], 'N'
+	je fimMenu
+
+	cmp byte [opcaoVoltar], 's'
+	je inicioMenu
+
+	cmp byte [opcaoVoltar], 'n'
+	je fimMenu
+
+	jmp erro
+
 
 ; calcula o fatorial de um numero n. Sem recursao
 ; rdi recebe o valor de entrada (copia)
