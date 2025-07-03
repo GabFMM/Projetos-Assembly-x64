@@ -79,6 +79,16 @@ _start:
 	cmp byte [opcao], 'C'
 	je combinacao
 
+	cmp byte [opcao], 'p'
+	je permutacao
+
+	cmp byte [opcao], 'a'
+	je arranjo
+
+	cmp byte [opcao], 'c'
+	je combinacao
+
+
 	jmp erro
 
 permutacao:
